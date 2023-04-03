@@ -57,7 +57,7 @@ public class PlayerMovement : MonoBehaviour
     private void OnTriggerEnter2D(Collider2D other)
     {
         //new if EnemyFire condition added
-        if (other.gameObject.layer == 6 || other.tag.Equals("EnemyFire"))
+        if (other.gameObject.layer == 10 || other.tag.Equals("EnemyFire"))
         {
             playerHealth--;
             healthText.text = $": {playerHealth}";
