@@ -16,7 +16,7 @@ public class EndScreenController : MonoBehaviour
 
     void Update()
     {
-        if (pM.isDead || bS.isDead)
+        if (pM.isDead || bS.Dead)
         {
             Time.timeScale = 0;
         }

@@ -1,126 +1,146 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using System.Collections;
 
 public class BossScript : MonoBehaviour
 {
-    private State state;
-    private bool inArena, toP1, toP2;
-    public bool isDead;
-    [SerializeField]GameObject startPosition;
-    [SerializeField]GameObject pointA, pointB;
-    private Transform currentPoint;
-    private Rigidbody2D rb;
-    private float speed;
-    private float bossHealth;
-    private float distance;
-    [SerializeField]private float distanceBetween;
-    [SerializeField]private Text bossHealthText, victoryText;
-    [SerializeField]private GameObject FinalText;
+    [Header("Boss Values")]
+    public float Speed;
+    public float DownSpeed, Health, MoveRange;
+    public GameObject Lazer;
+    public Text HealthText, VictoryText;
+    [HideInInspector] public bool Dead;
+
+    [SerializeField] Transform StartPos;
+    private Vector2 CurrentPos, DefaultPos;
+    private Rigidbody2D Rb;
+    private Transform PlayerPos;
+
+    enum State { Idle, Set, Battle}
+    private State CurrentState;
     
-
-    private enum State
-    {
-        idle, starting, bossTime
-    }
-
     void Awake()
     {
-        rb = GetComponent<Rigidbody2D>();
-        speed = 3;
-        state = State.idle;
-        inArena = false;
-        currentPoint = pointB.transform;
-        distanceBetween = .05f;
-        bossHealth = 5;
-        bossHealthText.text = $": {bossHealth}";
-        isDead = false;
+        Rb = GetComponent<Rigidbody2D>();
+        PlayerPos = FindObjectOfType<PlayerMovement>().transform;
+    }
+
+    void Start()
+    {
+        HealthText.text = $": {Health}";
+        DefaultPos = transform.position;
+        Direction = Vector2.left;
     }
 
     void Update()
     {
-        switch(state)
+        CurrentPos = transform.position;
+        switch (CurrentState)
         {
+            case State.Idle:
             default:
-            case State.idle:
-                break;
-            case State.starting:
-                Starting();
-                break;
-            case State.bossTime:
-                BossTime();
-                break;
-                
+            break;
+
+            case State.Set:
+            Setting();
+            break;
+
+            case State.Battle:
+            Battling();
+            break;
+
         }
     }
 
-    private void Starting()
+    void Setting()
     {
-        transform.position = Vector2.MoveTowards(this.transform.position, startPosition.transform.position, speed * Time.deltaTime);
-        if (inArena)
+        transform.position = Vector2.MoveTowards(CurrentPos, StartPos.position, Speed * Time.deltaTime); //move transform
+        var dist = Vector2.Distance(CurrentPos, StartPos.position); //check distance to destination
+
+        if (Mathf.Approximately(dist, 0)) //if distance is approximately zero, we've made it to the starting pos
         {
-            bossHealthText.gameObject.SetActive(true);
-            toP2 = true;
-            state = State.bossTime;
+            CurrentState = State.Battle;
+            HealthText.gameObject.SetActive(true);
+            Speed += 1.5f; //happens only once since this state is being left
+            StartCoroutine("FireRoutine"); //also happens only once
         }
     }
 
-    private void BossTime()
+    private Vector2 Direction;
+    void Battling()
     {
-        distance = Vector2.Distance(transform.position, currentPoint.transform.position);
-        Vector2 direction = currentPoint.position - transform.position;
-        direction.Normalize();
-        speed = 4.5f;
-        if (distance <= distanceBetween && toP1)
+        //cool math that definitly didn't take long to solve
+        var destinationX = new Vector2(DefaultPos.x + (Direction.x * MoveRange), CurrentPos.y); //Where we want to be on x axis
+        var destinationY = new Vector2(CurrentPos.x, PlayerPos.position.y); //Where we want to be on y axis
+        var distX = Vector2.Distance(CurrentPos, destinationX); //Our distance form x destination
+        var tempLerp = Vector2.MoveTowards(CurrentPos, destinationY, DownSpeed * Time.deltaTime); //Meta lerp for y axis
+        var tempPos = new Vector2(CurrentPos.x, tempLerp.y); //Meta position for shaving off the lerp x axis
+        transform.position = Vector2.MoveTowards(tempLerp, destinationX, Speed * Time.deltaTime);
+
+        //for turning left and right
+        if (Mathf.Approximately(distX, 0))
         {
-            currentPoint = pointA.transform;
-            transform.position = Vector2.MoveTowards(this.transform.position, currentPoint.transform.position, speed * Time.deltaTime);
-            toP1 = false;
-            toP2 = true;
+            Direction = Direction == Vector2.left ? Vector2.right : Vector2.left;
         }
-        else if (distance <= distanceBetween && toP2)
+
+    }
+
+    public int FireClockMin, FireClockMax;
+    private int FireClock;
+    IEnumerator FireRoutine()
+    {
+        FireClock = FireClockMin;
+
+        while (!Dead)
         {
-            currentPoint = pointB.transform;
-            transform.position = Vector2.MoveTowards(this.transform.position, currentPoint.transform.position, speed * Time.deltaTime);
-            toP1 = true;
-            toP2 = false;
+            yield return new WaitForSeconds(FireClock);
+            FireClock = Random.Range(FireClockMin,FireClockMax);
+            FireLaser();
         }
-        else
+    }
+
+    void FireLaser()
+    {
+        //Instantiate(Lazer, CurrentPos + Vector2.down * 2, Quaternion.identity);
+
+        GameObject bullet = EnemyFirePool.instance.GetPooledObject();
+
+        if (bullet != null)
         {
-            transform.position = Vector2.MoveTowards(this.transform.position, currentPoint.transform.position, speed * Time.deltaTime);
+            bullet.transform.position = CurrentPos + (Vector2.down * 2);
+            bullet.SetActive(true);
         }
+    }
+
+    void OnTriggerEnter2D(Collider2D other)
+    {
+        Debug.Log(CurrentState);
+        if (CurrentState != State.Battle) return;
+
+        switch (other.tag)
+        {
+            case "PlayerFire":
+            Health--; HealthText.text = $": {Health}"; 
+            Speed++; Speed = Mathf.Clamp(Speed, 0, 10);
+            break;
             
-    }
-
-    private void OnTriggerEnter2D(Collider2D other)
-    {
-        if (other.gameObject.layer == 8 && !inArena)
-        {
-            inArena = true;
+            default:
+            break;
         }
 
-        if (other.gameObject.GetComponent<Bullet>() == true && inArena)
+        if (Health <= 0)
         {
-            bossHealth--;
-            bossHealthText.text = $": {bossHealth}";
-            if (bossHealth <= 0)
-            {
-                bossHealthText.gameObject.SetActive(false);
-                FinalText.gameObject.SetActive(true);
-                victoryText.text = "You won! Press R to restart or Esc to quit.";
-                isDead = true;
-                gameObject.SetActive(false);
-            }
-            else
-            {
-                return;
-            }
+            HealthText.gameObject.SetActive(false);
+            VictoryText.gameObject.SetActive(true);
+            VictoryText.text = "You Won! Press R to Restart or Esc to Quit.";
+            Dead = true;
+            StopCoroutine("FireRoutine");
+            gameObject.SetActive(false);
         }
     }
 
     public void MoveToArena()
     {
-        state = State.starting;
+        CurrentState = State.Set;
     }
 }

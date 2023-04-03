@@ -4,12 +4,19 @@ using UnityEngine;
 
 public class Bullet : MonoBehaviour
 {
+    public bool Up = true;
     private float speed = 24f;
+    private Vector2 direction;
     [SerializeField]private Rigidbody2D blltBody;
+
+    void Start()
+    {
+        direction = Up ? Vector2.up : Vector2.down;
+    }
 
     private void FixedUpdate()
     {
-        blltBody.velocity = Vector2.up * speed;
+        blltBody.velocity = direction * speed;
     }
 
     private void OnTriggerEnter2D(Collider2D other)

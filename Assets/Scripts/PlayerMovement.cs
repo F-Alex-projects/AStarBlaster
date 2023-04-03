@@ -56,7 +56,8 @@ public class PlayerMovement : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.gameObject.GetComponent<MeteorController>() == true)
+        //new if EnemyFire condition added
+        if (other.gameObject.GetComponent<MeteorController>() == true || other.tag.Equals("EnemyFire"))
         {
             playerHealth--;
             healthText.text = $": {playerHealth}";
