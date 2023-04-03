@@ -64,7 +64,7 @@ public class MeteorController : MonoBehaviour
             gameObject.SetActive(false);
         }
 
-        if (other.gameObject.GetComponent<PlayerMovement>() == true)
+        if (other.gameObject.layer == 9)
         {
             gameObject.SetActive(false);
         }

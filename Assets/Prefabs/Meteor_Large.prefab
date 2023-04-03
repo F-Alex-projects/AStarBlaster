@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 6255238930492698216}
   - component: {fileID: 6255238930492698217}
   - component: {fileID: 6255238930492698221}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: Meteor_Large
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -127,7 +127,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   meteorHealth: 2
   player: {fileID: 2090637670325719775, guid: 6284c19565c611646affc07a80a255fb, type: 3}
-  gravityWell: {fileID: 7947831561282610412, guid: d62a04251e15b6240b910a0c95ab847c, type: 3}
   distanceBetween: 5
 --- !u!50 &6255238930492698221
 Rigidbody2D:

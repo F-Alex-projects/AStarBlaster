@@ -25,7 +25,7 @@ public class Bullet : MonoBehaviour
         {
             gameObject.SetActive(false);
         }
-        if (other.gameObject.GetComponent<MeteorController>() == true)
+        if (other.gameObject.layer == 10)
         {
             gameObject.SetActive(false);
         }
